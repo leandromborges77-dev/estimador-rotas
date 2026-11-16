@@ -3,37 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Estimador de Corridas com Mapa</title>
+  <meta name="theme-color" content="#2563eb">
+  <title>RotaFácil - Estimador de Corridas</title>
   
-  <!-- CSS do Leaflet (Mapa Interativo Gratuito) -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://w3.org' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%232563eb'/%3E%3Cpath d='M140 340c0-45 35-80 80-80h72c45 0 80-35 80-80s-35-80-80-80h-90' fill='none' stroke='%23ffffff' stroke-width='36' stroke-linecap='round'/%3E%3Ccircle cx='140' cy='355' r='34' fill='%23ffdd00'/%3E%3Ccircle cx='202' cy='100' r='34' fill='%2310b981'/%3E%3C/svg%3E">
+  
   <link rel="stylesheet" href="https://unpkg.com" />
   
   <style>
-    body { font-family: Arial, sans-serif; max-width: 500px; margin: 20px auto; padding: 15px; background: #f4f4f9; }
+    body { font-family: Arial, sans-serif; max-width: 500px; margin: 15px auto; padding: 12px; background: #f4f4f9; }
     .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    h2 { margin-top: 0; color: #1e293b; font-size: 20px; }
-    .input-group { position: relative; margin-bottom: 14px; }
+    
+    /* Cabeçalho com Ícone e Nome */
+    .header-app { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand svg { width: 34px; height: 34px; flex-shrink: 0; }
+    .brand h2 { margin: 0; color: #1e293b; font-size: 20px; }
+    .btn-instalar { display: none; background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+    
+    .input-group { position: relative; margin-bottom: 12px; }
     .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
     label { font-weight: bold; font-size: 13px; color: #334155; }
-    .btn-gps { background: #e0e7ff; color: #1d4ed8; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; }
-    .btn-gps:hover { background: #c7d2fe; }
-    .btn-gps:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-gps { background: #e0e7ff; color: #1d4ed8; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+    .btn-remover { background: #fee2e2; color: #b91c1c; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+    
     input, select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; }
-    .sugestoes { position: absolute; width: 100%; background: #fff; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; max-height: 180px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+    .sugestoes { position: absolute; width: 100%; background: #fff; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; max-height: 170px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
     .sugestao-item { padding: 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
     .sugestao-item:hover { background: #f8fafc; }
-    button.btn-calc { width: 100%; padding: 12px; margin-top: 8px; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; background: #2563eb; color: white; transition: background 0.2s; }
-    button.btn-calc:hover { background: #1d4ed8; }
+
+    .btn-add-parada { width: 100%; padding: 8px; margin-bottom: 14px; background: #f1f5f9; color: #334155; border: 1px dashed #94a3b8; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; }
+    .btn-add-parada:hover { background: #e2e8f0; }
+
+    .opcoes-linha { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; }
+    .checkbox-box { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold; color: #334155; background: #f8fafc; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+    .checkbox-box input { width: auto; margin: 0; }
+
+    button.btn-calc { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; background: #2563eb; color: white; }
     button.btn-calc:disabled { background: #93c5fd; cursor: not-allowed; }
     
-    /* Container do Mapa */
-    #mapa { height: 240px; width: 100%; border-radius: 8px; margin-top: 15px; display: none; border: 1px solid #cbd5e1; z-index: 1; }
+    #mapa { height: 220px; width: 100%; border-radius: 8px; margin-top: 15px; display: none; border: 1px solid #cbd5e1; z-index: 1; }
     
     .resultado { margin-top: 15px; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: none; }
-    .resumo-rota { display: flex; justify-content: space-around; background: #e0e7ff; padding: 10px; border-radius: 6px; margin-bottom: 12px; color: #1e3a8a; font-size: 14px; }
-    .preco-box { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
-    .preco-box:last-of-type { border-bottom: none; }
-    .preco-valor { font-weight: bold; font-size: 16px; color: #0f172a; }
+    .resumo-rota { display: flex; justify-content: space-around; background: #e0e7ff; padding: 10px; border-radius: 6px; margin-bottom: 14px; color: #1e3a8a; font-size: 13px; }
+    
+    /* Cards de Categorias */
+    .categoria-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+    .cat-titulo { font-weight: bold; font-size: 14px; color: #1e293b; margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .cat-desc { font-weight: normal; font-size: 11px; color: #64748b; }
+    .cat-linha { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; color: #334155; }
+    .cat-preco { font-weight: bold; color: #0f172a; }
+
     .btn-uber { background: #000000; color: white; display: none; text-align: center; text-decoration: none; padding: 12px; border-radius: 6px; margin-top: 12px; font-weight: bold; font-size: 14px; }
     .btn-99 { background: #ffdd00; color: #000; display: none; text-align: center; text-decoration: none; padding: 12px; border-radius: 6px; margin-top: 8px; font-weight: bold; font-size: 14px; }
     .aviso { font-size: 11px; color: #64748b; margin-top: 10px; text-align: center; }
@@ -42,187 +63,194 @@
 <body>
 
 <div class="card">
-  <h2>Simulador de Trajeto</h2>
+  <div class="header-app">
+    <div class="brand">
+      <!-- Ícone Vetorial Próprio -->
+      <svg xmlns="http://w3.org" viewBox="0 0 512 512">
+        <rect width="512" height="512" rx="110" fill="#2563eb"/>
+        <path d="M140 340c0-45 35-80 80-80h72c45 0 80-35 80-80s-35-80-80-80h-90" fill="none" stroke="#ffffff" stroke-width="38" stroke-linecap="round"/>
+        <circle cx="140" cy="355" r="36" fill="#ffdd00"/>
+        <circle cx="202" cy="100" r="36" fill="#10b981"/>
+      </svg>
+      <h2>RotaFácil</h2>
+    </div>
+    <button id="btnInstalar" class="btn-instalar">📲 Instalar App</button>
+  </div>
 
+  <!-- Origem -->
   <div class="input-group">
     <div class="label-row">
       <label for="inputOrigem">Origem</label>
-      <button type="button" class="btn-gps" id="btnGps" onclick="usarLocalizacaoAtual()">📍 Usar localização atual</button>
+      <button type="button" class="btn-gps" id="btnGps" onclick="usarLocalizacaoAtual()">📍 Usar GPS</button>
     </div>
-    <input type="text" id="inputOrigem" placeholder="Digite o endereço de partida..." autocomplete="off">
+    <input type="text" id="inputOrigem" placeholder="Endereço de partida..." autocomplete="off">
     <div id="sugestoesOrigem" class="sugestoes"></div>
   </div>
 
+  <!-- Paradas -->
+  <div id="containerParadas"></div>
+  <button type="button" class="btn-add-parada" onclick="adicionarParada()">+ Adicionar parada intermediária</button>
+
+  <!-- Destino -->
   <div class="input-group">
     <div class="label-row">
-      <label for="inputDestino">Destino</label>
+      <label for="inputDestino">Destino Final</label>
     </div>
     <input type="text" id="inputDestino" placeholder="Para onde você vai?" autocomplete="off">
     <div id="sugestoesDestino" class="sugestoes"></div>
   </div>
 
-  <div class="input-group">
-    <div class="label-row">
-      <label for="perfilTarifa">Perfil de Tarifa da Cidade</label>
-    </div>
-    <select id="perfilTarifa">
-      <option value="interior">Cidade Média / Interior (Tarifa padrão)</option>
-      <option value="capital">Capital / Região Metropolitana (Tarifa maior)</option>
+  <!-- Perfil e Ida/Volta -->
+  <div class="opcoes-linha">
+    <select id="perfilTarifa" title="Perfil de Tarifa">
+      <option value="interior">Tarifa: Interior / Média</option>
+      <option value="capital">Tarifa: Capital / Metrópole</option>
     </select>
+
+    <label class="checkbox-box">
+      <input type="checkbox" id="checkIdaVolta"> Ida e Volta
+    </label>
   </div>
   
-  <button class="btn-calc" id="btnCalc" onclick="calcularRota()">Calcular Trajeto e Preço</button>
+  <button class="btn-calc" id="btnCalc" onclick="calcularRota()">Calcular Categorias e Preços</button>
 
-  <!-- Mapa Visual -->
   <div id="mapa"></div>
 
   <div id="resultado" class="resultado">
     <div class="resumo-rota">
       <span>🛣️ <strong><span id="distancia"></span> km</strong></span>
       <span>⏱️ <strong><span id="tempo"></span> min</strong></span>
+      <span id="tagIdaVolta" style="display:none;">🔄 <strong>Ida/Volta</strong></span>
     </div>
 
-    <div class="preco-box">
-      <span>🚗 <strong>UberX</strong></span>
-      <span class="preco-valor" id="precoUber"></span>
+    <!-- Categoria Moto -->
+    <div class="categoria-card">
+      <div class="cat-titulo">🏍️ Moto <span class="cat-desc">Mais rápido e barato (1 passageiro)</span></div>
+      <div class="cat-linha"><span>Uber Moto</span> <span class="cat-preco" id="precoUberMoto"></span></div>
+      <div class="cat-linha"><span>99Moto</span> <span class="cat-preco" id="preco99Moto"></span></div>
     </div>
 
-    <div class="preco-box">
-      <span>🚕 <strong>99Pop</strong></span>
-      <span class="preco-valor" id="preco99"></span>
+    <!-- Categoria Econômico -->
+    <div class="categoria-card">
+      <div class="cat-titulo">🚗 Econômico <span class="cat-desc">Dia a dia (até 4 passageiros)</span></div>
+      <div class="cat-linha"><span>UberX</span> <span class="cat-preco" id="precoUberX"></span></div>
+      <div class="cat-linha"><span>99Pop</span> <span class="cat-preco" id="preco99Pop"></span></div>
     </div>
 
-    <a id="linkUber" class="btn-uber" target="_blank" rel="noopener noreferrer">Chamar na Uber</a>
+    <!-- Categoria Conforto -->
+    <div class="categoria-card">
+      <div class="cat-titulo">🚙 Conforto <span class="cat-desc">Carros mais espaçosos e ar-condicionado</span></div>
+      <div class="cat-linha"><span>Uber Comfort</span> <span class="cat-preco" id="precoUberComfort"></span></div>
+      <div class="cat-linha"><span>99Comfort</span> <span class="cat-preco" id="preco99Comfort"></span></div>
+    </div>
+
+    <!-- Categoria Executivo -->
+    <div class="categoria-card">
+      <div class="cat-titulo">🚘 Executivo <span class="cat-desc">Carros premium e motoristas bem avaliados</span></div>
+      <div class="cat-linha"><span>Uber Black</span> <span class="cat-preco" id="precoUberBlack"></span></div>
+    </div>
+
+    <a id="linkUber" class="btn-uber" target="_blank" rel="noopener noreferrer">Escolher categoria na Uber</a>
     <a id="link99" class="btn-99" target="_blank" rel="noopener noreferrer">Abrir app da 99</a>
-    <p class="aviso">*Valores estimados com base na distância e horário. Sujeito à tarifa dinâmica dos apps.</p>
+    <p class="aviso">*Valores estimados conforme distância, horário e categoria. A disponibilidade de Moto ou Black varia conforme a cidade.</p>
   </div>
 </div>
 
-<!-- JavaScript do Leaflet -->
 <script src="https://unpkg.com"></script>
 
 <script>
-  let origemSelecionada = null;
-  let destinoSelecionado = null;
-  let mapa = null;
-  let camadaRota = null;
-  let marcadores = [];
-
-  // Inicializa ou atualiza o mapa visual
-  function desenharMapa(origem, destino, geojsonRota) {
-    const divMapa = document.getElementById("mapa");
-    divMapa.style.display = "block";
-
-    if (!mapa) {
-      mapa = L.map('mapa').setView([origem.lat, origem.lng], 14);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-      }).addTo(mapa);
-    }
-
-    // Corrige tamanho caso o container estivesse oculto
-    setTimeout(() => { mapa.invalidateSize(); }, 100);
-
-    // Limpa rota e marcadores anteriores
-    if (camadaRota) mapa.removeLayer(camadaRota);
-    marcadores.forEach(m => mapa.removeLayer(m));
-    marcadores = [];
-
-    // Adiciona marcadores de Origem e Destino
-    const mOrigem = L.marker([origem.lat, origem.lng]).addTo(mapa).bindPopup(`<b>Origem:</b> ${origem.nome}`);
-    const mDestino = L.marker([destino.lat, destino.lng]).addTo(mapa).bindPopup(`<b>Destino:</b> ${destino.nome}`);
-    marcadores.push(mOrigem, mDestino);
-
-    // Desenha a linha azul do trajeto
-    camadaRota = L.geoJSON(geojsonRota, {
-      style: { color: '#2563eb', weight: 5, opacity: 0.8 }
-    }).addTo(mapa);
-
-    // Ajusta o zoom para mostrar toda a rota na tela
-    mapa.fitBounds(camadaRota.getBounds(), { padding: [30, 30] });
+  // --- 1. CONFIGURAÇÃO PWA ---
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW erro:", err));
+    });
   }
 
-  function usarLocalizacaoAtual() {
-    const btnGps = document.getElementById("btnGps");
-    const inputOrigem = document.getElementById("inputOrigem");
+  let promptInstalacao = null;
+  const btnInstalar = document.getElementById("btnInstalar");
 
-    if (!("geolocation" in navigator)) {
-      alert("Seu navegador não suporta geolocalização.");
-      return;
-    }
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    promptInstalacao = e;
+    btnInstalar.style.display = "block";
+  });
+  btnInstalar.addEventListener("click", async () => {
+if (!promptInstalacao) return;
+promptInstalacao.prompt();
+await promptInstalacao.userChoice;
+promptInstalacao = null;
+btnInstalar.style.display = "none";
+});
+// --- 2. GERENCIAMENTO DE PONTOS E PARADAS ---
+const pontos = {
+origem: null,
+destino: null,
+paradas: {}
+};
+let contadorParadas = 0;
+function adicionarParada() {
+if (Object.keys(pontos.paradas).length >= 3) {
+alert("Limite máximo de 3 paradas intermediárias atingido.");
+return;
+}
+contadorParadas++;
+const id = parada_${contadorParadas};
+pontos.paradas[id] = null;
+const container = document.getElementById("containerParadas");
+const div = document.createElement("div");
+div.className = "input-group";
+div.id = grupo_${id};
+div.innerHTML = `
+Parada Intermediária
+✕ Remover
 
-    btnGps.innerText = "⏳ Buscando GPS...";
-    btnGps.disabled = true;
 
-    navigator.geolocation.getCurrentPosition(
-      async (posicao) => {
-        const lat = posicao.coords.latitude;
-        const lng = posicao.coords.longitude;
 
-        try {
-          const url = `https://openstreetmap.org{lat}&lon=${lng}&accept-language=pt-BR`;
-          const res = await fetch(url);
-          const data = await res.json();
-
-          const endereco = data.address || {};
-          const rua = endereco.road || "Localização Atual";
-          const numero = endereco.house_number ? `, ${endereco.house_number}` : "";
-          const bairro = endereco.suburb || endereco.neighbourhood || "";
-          const cidade = endereco.city || endereco.town || endereco.municipality || "";
-
-          const nomeLegivel = `${rua}${numero}${bairro ? ` - ${bairro}` : ""}${cidade ? `, ${cidade}` : ""}`;
-
-          inputOrigem.value = nomeLegivel;
-          origemSelecionada = { lat: lat, lng: lng, nome: nomeLegivel };
-        } catch (erro) {
-          inputOrigem.value = "Minha localização atual (GPS)";
-          origemSelecionada = { lat: lat, lng: lng, nome: "Minha localização atual" };
-        } finally {
-          btnGps.innerText = "📍 Usar localização atual";
-          btnGps.disabled = false;
-        }
-      },
-      (erro) => {
-        btnGps.innerText = "📍 Usar localização atual";
-        btnGps.disabled = false;
-        alert("Não foi possível acessar sua localização. Verifique se a permissão de GPS está ativada.");
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  }
-
-  function configurarAutocomplete(inputId, listaId, tipo) {
-    const input = document.getElementById(inputId);
-    const lista = document.getElementById(listaId);
-    let timeout = null;
-
-    input.addEventListener("input", () => {
-      if (tipo === "origem") origemSelecionada = null;
-      if (tipo === "destino") destinoSelecionado = null;
-
-      clearTimeout(timeout);
-      const texto = input.value.trim();
-
-      if (texto.length < 3) {
-        lista.style.display = "none";
-        return;
-      }
-
-      timeout = setTimeout(async () => {
-        try {
-          const url = `https://komoot.io{encodeURIComponent(texto)}&limit=5&bbox=-73.99,-33.75,-34.79,5.27`;
-          const res = await fetch(url);
-          const data = await res.json();
-
-          lista.innerHTML = "";
-          if (!data.features || data.features.length === 0) {
-            lista.style.display = "none";
-            return;
-          }
-
-          data.features.forEach(item => {
-            const props = item.properties;
-            const coords = item.geometry.coordinates; // [longitude, latitude]
+`;
+container.appendChild(div);
+configurarAutocomplete(input_${id}, sugestoes_${id}, id);
+}
+function removerParada(id) {
+delete pontos.paradas[id];
+const elemento = document.getElementById(grupo_${id});
+if (elemento) elemento.remove();
+}
+// --- 3. AUTOCOMPLETE E GPS ---
+function configurarAutocomplete(inputId, listaId, chavePonto) {
+const input = document.getElementById(inputId);
+const lista = document.getElementById(listaId);
+let timeout = null;
+const limparPonto = () => {
+if (chavePonto === "origem") pontos.origem = null;
+else if (chavePonto === "destino") pontos.destino = null;
+else pontos.paradas[chavePonto] = null;
+};
+const salvarPonto = (obj) => {
+if (chavePonto === "origem") pontos.origem = obj;
+else if (chavePonto === "destino") pontos.destino = obj;
+else pontos.paradas[chavePonto] = obj;
+};
+input.addEventListener("input", () => {
+limparPonto();
+clearTimeout(timeout);
+const texto = input.value.trim();
+if (texto.length < 3) {
+lista.style.display = "none";
+return;
+}
+timeout = setTimeout(async () => {
+try {
+const url = https://komoot.io{encodeURIComponent(texto)}&limit=5&bbox=-73.99,-33.75,-34.79,5.27;
+const res = await fetch(url);
+const data = await res.json();
+lista.innerHTML = "";
+if (!data.features || data.features.length === 0) {
+lista.style.display = "none";
+return;
+}
+data.features.forEach(item => {
+const props = item.properties;
+const coords = item.geometry.coordinates; // [longitude, latitude]
 const partes = [props.name, props.street, props.district, props.city, props.state].filter(Boolean);
 const nomeFormatado = [...new Set(partes)].join(", ");
 const div = document.createElement("div");
@@ -231,15 +259,13 @@ div.innerText = nomeFormatado;
 div.onclick = () => {
 input.value = nomeFormatado;
 lista.style.display = "none";
-const localObj = { lat: coords[1], lng: coords[0], nome: props.name || nomeFormatado };
-if (tipo === "origem") origemSelecionada = localObj;
-if (tipo === "destino") destinoSelecionado = localObj;
+salvarPonto({ lat: coords, lng: coords, nome: props.name || nomeFormatado });
 };
 lista.appendChild(div);
 });
 lista.style.display = "block";
 } catch (e) {
-console.error("Erro na busca de endereço:", e);
+console.error("Erro na busca:", e);
 }
 }, 400);
 });
@@ -249,16 +275,104 @@ if (e.target !== input) lista.style.display = "none";
 }
 configurarAutocomplete("inputOrigem", "sugestoesOrigem", "origem");
 configurarAutocomplete("inputDestino", "sugestoesDestino", "destino");
-async function calcularRota() {
-if (!origemSelecionada || !destinoSelecionado) {
-alert("Por favor, selecione uma Origem (da lista ou via GPS) e um Destino da lista de sugestões.");
+function usarLocalizacaoAtual() {
+const btnGps = document.getElementById("btnGps");
+const inputOrigem = document.getElementById("inputOrigem");
+if (!("geolocation" in navigator)) {
+alert("Seu navegador não suporta geolocalização.");
 return;
 }
+btnGps.innerText = "⏳ Buscando...";
+btnGps.disabled = true;
+navigator.geolocation.getCurrentPosition(
+async (posicao) => {
+const lat = posicao.coords.latitude;
+const lng = posicao.coords.longitude;
+try {
+const url = https://openstreetmap.org{lat}&lon=${lng}&accept-language=pt-BR;
+const res = await fetch(url);
+const data = await res.json();
+const endereco = data.address || {};
+const rua = endereco.road || "Localização Atual";
+const numero = endereco.house_number ? , ${endereco.house_number} : "";
+const bairro = endereco.suburb || endereco.neighbourhood || "";
+const cidade = endereco.city || endereco.town || endereco.municipality || "";
+const nomeLegivel = ${rua}${numero}${bairro ?  - ${bairro}: ""}${cidade ?, ${cidade} : ""};
+inputOrigem.value = nomeLegivel;
+pontos.origem = { lat, lng, nome: nomeLegivel };
+} catch (erro) {
+inputOrigem.value = "Minha localização atual (GPS)";
+pontos.origem = { lat, lng, nome: "Minha localização atual" };
+} finally {
+btnGps.innerText = "📍 Usar GPS";
+btnGps.disabled = false;
+}
+},
+() => {
+btnGps.innerText = "📍 Usar GPS";
+btnGps.disabled = false;
+alert("Não foi possível acessar o GPS. Verifique as permissões.");
+},
+{ enableHighAccuracy: true, timeout: 10000 }
+);
+}
+// --- 4. MAPA E CÁLCULO DE ROTA ---
+let mapa = null;
+let camadaRota = null;
+let marcadores = [];
+function desenharMapa(listaPontos, geojsonRota) {
+const divMapa = document.getElementById("mapa");
+divMapa.style.display = "block";
+if (!mapa) {
+mapa = L.map('mapa').setView([listaPontos.lat, listaPontos.lng], 14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+attribution: '© OpenStreetMap'
+}).addTo(mapa);
+}
+setTimeout(() => { mapa.invalidateSize(); }, 100);
+if (camadaRota) mapa.removeLayer(camadaRota);
+marcadores.forEach(m => mapa.removeLayer(m));
+marcadores = [];
+const totalUnicos = document.getElementById("checkIdaVolta").checked ? listaPontos.length - 1 : listaPontos.length;
+for (let i = 0; i < totalUnicos; i++) {
+const p = listaPontos[i];
+let titulo = <b>Parada ${i}:</b> ${p.nome};
+if (i === 0) titulo = <b>Origem:</b> ${p.nome};
+else if (i === totalUnicos - 1) titulo = <b>Destino:</b> ${p.nome};
+const marcador = L.marker([p.lat, p.lng]).addTo(mapa).bindPopup(titulo);
+marcadores.push(marcador);
+}
+camadaRota = L.geoJSON(geojsonRota, {
+style: { color: '#2563eb', weight: 5, opacity: 0.8 }
+}).addTo(mapa);
+mapa.fitBounds(camadaRota.getBounds(), { padding: });
+}
+async function calcularRota() {
+if (!pontos.origem || !pontos.destino) {
+alert("Por favor, selecione uma Origem e um Destino válidos.");
+return;
+}
+const chavesParadas = Object.keys(pontos.paradas);
+for (const chave of chavesParadas) {
+if (!pontos.paradas[chave]) {
+alert("Preencha todas as paradas adicionadas ou remova as que estiverem vazias.");
+return;
+}
+}
 const btnCalc = document.getElementById("btnCalc");
-btnCalc.innerText = "Calculando trajeto...";
+btnCalc.innerText = "Calculando categorias...";
 btnCalc.disabled = true;
-// Adicionado geometries=geojson para desenhar a linha exata das ruas no mapa
-const url = https://project-osrm.org{origemSelecionada.lng},${origemSelecionada.lat};${destinoSelecionado.lng},${destinoSelecionado.lat}?overview=full&geometries=geojson;
+const rotaCompleta = [
+pontos.origem,
+...chavesParadas.map(k => pontos.paradas[k]),
+pontos.destino
+];
+const ehIdaVolta = document.getElementById("checkIdaVolta").checked;
+if (ehIdaVolta) {
+rotaCompleta.push(pontos.origem);
+}
+const coordsUrl = rotaCompleta.map(p => ${p.lng},${p.lat}).join(";");
+const url = https://project-osrm.org{coordsUrl}?overview=full&geometries=geojson;
 try {
 const resposta = await fetch(url);
 const dados = await resposta.json();
@@ -266,30 +380,40 @@ if (dados.code !== "Ok" || !dados.routes || dados.routes.length === 0) {
 alert("Não foi possível traçar uma rota entre esses pontos.");
 return;
 }
-const rota = dados.routes[0];
+const rota = dados.routes;
 const distanciaKm = (rota.distance / 1000).toFixed(1);
-const tempoMin = Math.ceil(rota.duration / 60);
-// Desenha o mapa e a rota na tela
-desenharMapa(origemSelecionada, destinoSelecionado, rota.geometry);
-// Define tarifas conforme o perfil selecionado
+const tempoParadas = chavesParadas.length * 3;
+const tempoMin = Math.ceil(rota.duration / 60) + tempoParadas;
+desenharMapa(rotaCompleta, rota.geometry);
+// Tarifas base para Econômico (UberX / 99Pop)
 const perfil = document.getElementById("perfilTarifa").value;
-const tarifas = perfil === "capital"
+const tarifasBase = perfil === "capital"
 ? { uber: [2.75, 1.60, 0.32, 8.50], n99: [2.50, 1.50, 0.28, 8.00] }
 : { uber: [2.20, 1.35, 0.22, 6.50], n99: [2.00, 1.25, 0.20, 6.00] };
 const horaAtual = new Date().getHours();
 const ehPico = (horaAtual >= 7 && horaAtual <= 9) || (horaAtual >= 17 && horaAtual <= 19);
 const fatorMax = ehPico ? 1.45 : 1.25;
-const calcFaixa = ([base, porKm, porMin, minima]) => {
-const valorMedio = base + (parseFloat(distanciaKm) * porKm) + (tempoMin * porMin);
-const min = Math.max(minima, valorMedio * 0.90).toFixed(2).replace('.', ',');
+// Calcula a faixa aplicando o multiplicador da categoria (Moto ~0.62x, Comfort ~1.32x, Black ~1.85x)
+const calcCategoria = ([base, porKm, porMin, minima], multiplicador) => {
+const baseTotal = (ehIdaVolta ? base * 2 : base) * multiplicador;
+const minimaTotal = (ehIdaVolta ? minima * 2 : minima) * multiplicador;
+const valorMedio = baseTotal + ((parseFloat(distanciaKm) * porKm + tempoMin * porMin) * multiplicador);
+const min = Math.max(minimaTotal, valorMedio * 0.90).toFixed(2).replace('.', ',');
 const max = (valorMedio * fatorMax).toFixed(2).replace('.', ',');
 return R$ ${min} - R$ ${max};
 };
 document.getElementById("distancia").innerText = distanciaKm.replace('.', ',');
 document.getElementById("tempo").innerText = tempoMin;
-document.getElementById("precoUber").innerText = calcFaixa(tarifas.uber);
-document.getElementById("preco99").innerText = calcFaixa(tarifas.n99);
-const uberUrl = https://uber.com[latitude]=${origemSelecionada.lat}&pickup[longitude]=${origemSelecionada.lng}&pickup[nickname]=${encodeURIComponent(origemSelecionada.nome)}&dropoff[latitude]=${destinoSelecionado.lat}&dropoff[longitude]=${destinoSelecionado.lng}&dropoff[nickname]=${encodeURIComponent(destinoSelecionado.nome)};
+document.getElementById("tagIdaVolta").style.display = ehIdaVolta ? "inline" : "none";
+// Preenche todas as categorias na tela
+document.getElementById("precoUberMoto").innerText = calcCategoria(tarifasBase.uber, 0.62);
+document.getElementById("preco99Moto").innerText = calcCategoria(tarifasBase.n99, 0.60);
+document.getElementById("precoUberX").innerText = calcCategoria(tarifasBase.uber, 1.00);
+document.getElementById("preco99Pop").innerText = calcCategoria(tarifasBase.n99, 1.00);
+document.getElementById("precoUberComfort").innerText = calcCategoria(tarifasBase.uber, 1.32);
+document.getElementById("preco99Comfort").innerText = calcCategoria(tarifasBase.n99, 1.30);
+document.getElementById("precoUberBlack").innerText = calcCategoria(tarifasBase.uber, 1.85);
+const uberUrl = https://uber.com[latitude]=${pontos.origem.lat}&pickup[longitude]=${pontos.origem.lng}&pickup[nickname]=${encodeURIComponent(pontos.origem.nome)}&dropoff[latitude]=${pontos.destino.lat}&dropoff[longitude]=${pontos.destino.lng}&dropoff[nickname]=${encodeURIComponent(pontos.destino.nome)};
 const app99Url = https://99app.com;
 const btnUber = document.getElementById("linkUber");
 btnUber.href = uberUrl;
@@ -300,9 +424,9 @@ btn99.style.display = "block";
 document.getElementById("resultado").style.display = "block";
 } catch (erro) {
 console.error("Erro na requisição:", erro);
-alert("Erro ao conectar com o serviço de rotas. Tente novamente.");
+alert("Erro ao conectar com o serviço de rotas.");
 } finally {
-btnCalc.innerText = "Calcular Trajeto e Preço";
+btnCalc.innerText = "Calcular Categorias e Preços";
 btnCalc.disabled = false;
-}
-}
+}}
+
