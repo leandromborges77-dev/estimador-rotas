@@ -3,26 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Estimador de Corridas</title>
+  <title>Estimador de Corridas com Mapa</title>
+  
+  <!-- CSS do Leaflet (Mapa Interativo Gratuito) -->
+  <link rel="stylesheet" href="https://unpkg.com" />
+  
   <style>
-    body { font-family: Arial, sans-serif; max-width: 480px; margin: 30px auto; padding: 15px; background: #f4f4f9; }
-    .card { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .input-group { position: relative; margin-bottom: 15px; }
+    body { font-family: Arial, sans-serif; max-width: 500px; margin: 20px auto; padding: 15px; background: #f4f4f9; }
+    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h2 { margin-top: 0; color: #1e293b; font-size: 20px; }
+    .input-group { position: relative; margin-bottom: 14px; }
     .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-    label { font-weight: bold; font-size: 14px; }
+    label { font-weight: bold; font-size: 13px; color: #334155; }
     .btn-gps { background: #e0e7ff; color: #1d4ed8; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; }
     .btn-gps:hover { background: #c7d2fe; }
     .btn-gps:disabled { opacity: 0.6; cursor: not-allowed; }
-    input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
-    .sugestoes { position: absolute; width: 100%; background: #fff; border: 1px solid #ddd; border-top: none; border-radius: 0 0 6px 6px; max-height: 180px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
-    .sugestao-item { padding: 10px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #eee; }
-    .sugestao-item:hover { background: #f0f4ff; }
-    button.btn-calc { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; background: #2563eb; color: white; }
+    input, select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; }
+    .sugestoes { position: absolute; width: 100%; background: #fff; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; max-height: 180px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+    .sugestao-item { padding: 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+    .sugestao-item:hover { background: #f8fafc; }
+    button.btn-calc { width: 100%; padding: 12px; margin-top: 8px; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; background: #2563eb; color: white; transition: background 0.2s; }
+    button.btn-calc:hover { background: #1d4ed8; }
     button.btn-calc:disabled { background: #93c5fd; cursor: not-allowed; }
-    .btn-uber { background: #000000; color: white; display: none; text-align: center; text-decoration: none; padding: 12px; border-radius: 6px; margin-top: 10px; font-weight: bold; }
-    .btn-99 { background: #ffdd00; color: #000; display: none; text-align: center; text-decoration: none; padding: 12px; border-radius: 6px; margin-top: 10px; font-weight: bold; }
-    .resultado { margin-top: 20px; padding: 15px; background: #eef2ff; border-radius: 6px; display: none; }
-    .aviso { font-size: 12px; color: #555; margin-top: 10px; text-align: center; }
+    
+    /* Container do Mapa */
+    #mapa { height: 240px; width: 100%; border-radius: 8px; margin-top: 15px; display: none; border: 1px solid #cbd5e1; z-index: 1; }
+    
+    .resultado { margin-top: 15px; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: none; }
+    .resumo-rota { display: flex; justify-content: space-around; background: #e0e7ff; padding: 10px; border-radius: 6px; margin-bottom: 12px; color: #1e3a8a; font-size: 14px; }
+    .preco-box { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
+    .preco-box:last-of-type { border-bottom: none; }
+    .preco-valor { font-weight: bold; font-size: 16px; color: #0f172a; }
+    .btn-uber { background: #000000; color: white; display: none; text-align: center; text-decoration: none; padding: 12px; border-radius: 6px; margin-top: 12px; font-weight: bold; font-size: 14px; }
+    .btn-99 { background: #ffdd00; color: #000; display: none; text-align: center; text-decoration: none; padding: 12px; border-radius: 6px; margin-top: 8px; font-weight: bold; font-size: 14px; }
+    .aviso { font-size: 11px; color: #64748b; margin-top: 10px; text-align: center; }
   </style>
 </head>
 <body>
@@ -46,25 +60,87 @@
     <input type="text" id="inputDestino" placeholder="Para onde você vai?" autocomplete="off">
     <div id="sugestoesDestino" class="sugestoes"></div>
   </div>
+
+  <div class="input-group">
+    <div class="label-row">
+      <label for="perfilTarifa">Perfil de Tarifa da Cidade</label>
+    </div>
+    <select id="perfilTarifa">
+      <option value="interior">Cidade Média / Interior (Tarifa padrão)</option>
+      <option value="capital">Capital / Região Metropolitana (Tarifa maior)</option>
+    </select>
+  </div>
   
-  <button class="btn-calc" id="btnCalc" onclick="calcularRota()">Calcular Estimativa</button>
+  <button class="btn-calc" id="btnCalc" onclick="calcularRota()">Calcular Trajeto e Preço</button>
+
+  <!-- Mapa Visual -->
+  <div id="mapa"></div>
 
   <div id="resultado" class="resultado">
-    <p><strong>Distância:</strong> <span id="distancia"></span> km</p>
-    <p><strong>Tempo estimado:</strong> <span id="tempo"></span> min</p>
-    <hr>
-    <p><strong>Estimativa UberX:</strong> <span id="precoUber"></span></p>
-    <p><strong>Estimativa 99Pop:</strong> <span id="preco99"></span></p>
+    <div class="resumo-rota">
+      <span>🛣️ <strong><span id="distancia"></span> km</strong></span>
+      <span>⏱️ <strong><span id="tempo"></span> min</strong></span>
+    </div>
+
+    <div class="preco-box">
+      <span>🚗 <strong>UberX</strong></span>
+      <span class="preco-valor" id="precoUber"></span>
+    </div>
+
+    <div class="preco-box">
+      <span>🚕 <strong>99Pop</strong></span>
+      <span class="preco-valor" id="preco99"></span>
+    </div>
 
     <a id="linkUber" class="btn-uber" target="_blank" rel="noopener noreferrer">Chamar na Uber</a>
     <a id="link99" class="btn-99" target="_blank" rel="noopener noreferrer">Abrir app da 99</a>
-    <p class="aviso">*Valores estimados. O preço final pode variar conforme a tarifa dinâmica.</p>
+    <p class="aviso">*Valores estimados com base na distância e horário. Sujeito à tarifa dinâmica dos apps.</p>
   </div>
 </div>
+
+<!-- JavaScript do Leaflet -->
+<script src="https://unpkg.com"></script>
 
 <script>
   let origemSelecionada = null;
   let destinoSelecionado = null;
+  let mapa = null;
+  let camadaRota = null;
+  let marcadores = [];
+
+  // Inicializa ou atualiza o mapa visual
+  function desenharMapa(origem, destino, geojsonRota) {
+    const divMapa = document.getElementById("mapa");
+    divMapa.style.display = "block";
+
+    if (!mapa) {
+      mapa = L.map('mapa').setView([origem.lat, origem.lng], 14);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(mapa);
+    }
+
+    // Corrige tamanho caso o container estivesse oculto
+    setTimeout(() => { mapa.invalidateSize(); }, 100);
+
+    // Limpa rota e marcadores anteriores
+    if (camadaRota) mapa.removeLayer(camadaRota);
+    marcadores.forEach(m => mapa.removeLayer(m));
+    marcadores = [];
+
+    // Adiciona marcadores de Origem e Destino
+    const mOrigem = L.marker([origem.lat, origem.lng]).addTo(mapa).bindPopup(`<b>Origem:</b> ${origem.nome}`);
+    const mDestino = L.marker([destino.lat, destino.lng]).addTo(mapa).bindPopup(`<b>Destino:</b> ${destino.nome}`);
+    marcadores.push(mOrigem, mDestino);
+
+    // Desenha a linha azul do trajeto
+    camadaRota = L.geoJSON(geojsonRota, {
+      style: { color: '#2563eb', weight: 5, opacity: 0.8 }
+    }).addTo(mapa);
+
+    // Ajusta o zoom para mostrar toda a rota na tela
+    mapa.fitBounds(camadaRota.getBounds(), { padding: [30, 30] });
+  }
 
   function usarLocalizacaoAtual() {
     const btnGps = document.getElementById("btnGps");
@@ -109,7 +185,7 @@
       (erro) => {
         btnGps.innerText = "📍 Usar localização atual";
         btnGps.disabled = false;
-        alert("Não foi possível acessar sua localização. Verifique se a permissão de GPS está ativada e se o site usa HTTPS.");
+        alert("Não foi possível acessar sua localização. Verifique se a permissão de GPS está ativada.");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -121,7 +197,6 @@
     let timeout = null;
 
     input.addEventListener("input", () => {
-      // Limpa a coordenada anterior sempre que o usuário alterar o texto manualmente
       if (tipo === "origem") origemSelecionada = null;
       if (tipo === "destino") destinoSelecionado = null;
 
@@ -148,78 +223,86 @@
           data.features.forEach(item => {
             const props = item.properties;
             const coords = item.geometry.coordinates; // [longitude, latitude]
-            const partes = [props.name, props.street, props.district, props.city, props.state].filter(Boolean);
-            const nomeFormatado = [...new Set(partes)].join(", ");
-
-            const div = document.createElement("div");
-            div.className = "sugestao-item";
-            div.innerText = nomeFormatado;
-
-            div.onclick = () => {
-              input.value = nomeFormatado;
-              lista.style.display = "none";
-              
-              // Correção aplicada: coords[1] é latitude e coords[0] é longitude
-              const localObj = { lat: coords[1], lng: coords[0], nome: props.name || nomeFormatado };
-              if (tipo === "origem") origemSelecionada = localObj;
-              if (tipo === "destino") destinoSelecionado = localObj;
-            };
-
-            lista.appendChild(div);
-          });
-
-          lista.style.display = "block";
-        } catch (e) {
-          console.error("Erro na busca de endereço:", e);
-        }
-      }, 400);
-    });
-
-    document.addEventListener("click", (e) => {
-      if (e.target !== input) lista.style.display = "none";
-    });
-  }
-
-  configurarAutocomplete("inputOrigem", "sugestoesOrigem", "origem");
-  configurarAutocomplete("inputDestino", "sugestoesDestino", "destino");
-
-  async function calcularRota() {
-    if (!origemSelecionada || !destinoSelecionado) {
-      alert("Por favor, selecione uma Origem (da lista ou via GPS) e um Destino da lista de sugestões.");
-      return;
-    }
-
-    const btnCalc = document.getElementById("btnCalc");
-    btnCalc.innerText = "Calculando...";
-    btnCalc.disabled = true;
-
-    const url = `https://project-osrm.org{origemSelecionada.lng},${origemSelecionada.lat};${destinoSelecionado.lng},${destinoSelecionado.lat}?overview=false`;
-
-    try {
-      const resposta = await fetch(url);
-      const dados = await resposta.json();
-
-      if (dados.code !== "Ok" || !dados.routes || dados.routes.length === 0) {
-        alert("Não foi possível traçar uma rota entre esses pontos.");
-        return;
-      }
-
-      // Correção aplicada: acessando o primeiro item do array de rotas [0]
-      const rota = dados.routes[0];
-      const distanciaKm = (rota.distance / 1000).toFixed(1);
-      const tempoMin = Math.ceil(rota.duration / 60);
-
-      const horaAtual = new Date().getHours();
-      const ehPico = (horaAtual >= 7 && horaAtual <= 9) || (horaAtual >= 17 && horaAtual <= 19);
-      const fatorMax = ehPico ? 1.45 : 1.25;
-
-      const calcFaixa = (base, porKm, porMin) => {
-        const valorMedio = base + (parseFloat(distanciaKm) * porKm) + (tempoMin * porMin);
-        const min = Math.max(7.00, valorMedio * 0.90).toFixed(2).replace('.', ',');
-        const max = (valorMedio * fatorMax).toFixed(2).replace('.', ',');
-        return `R$ ${min} - R$ ${max}`;
-      };
-
-      document.getElementById("distancia").innerText = distanciaKm.replace('.', ',');
-      document.getElementById("tempo").innerText = tempoMin;
-
+const partes = [props.name, props.street, props.district, props.city, props.state].filter(Boolean);
+const nomeFormatado = [...new Set(partes)].join(", ");
+const div = document.createElement("div");
+div.className = "sugestao-item";
+div.innerText = nomeFormatado;
+div.onclick = () => {
+input.value = nomeFormatado;
+lista.style.display = "none";
+const localObj = { lat: coords[1], lng: coords[0], nome: props.name || nomeFormatado };
+if (tipo === "origem") origemSelecionada = localObj;
+if (tipo === "destino") destinoSelecionado = localObj;
+};
+lista.appendChild(div);
+});
+lista.style.display = "block";
+} catch (e) {
+console.error("Erro na busca de endereço:", e);
+}
+}, 400);
+});
+document.addEventListener("click", (e) => {
+if (e.target !== input) lista.style.display = "none";
+});
+}
+configurarAutocomplete("inputOrigem", "sugestoesOrigem", "origem");
+configurarAutocomplete("inputDestino", "sugestoesDestino", "destino");
+async function calcularRota() {
+if (!origemSelecionada || !destinoSelecionado) {
+alert("Por favor, selecione uma Origem (da lista ou via GPS) e um Destino da lista de sugestões.");
+return;
+}
+const btnCalc = document.getElementById("btnCalc");
+btnCalc.innerText = "Calculando trajeto...";
+btnCalc.disabled = true;
+// Adicionado geometries=geojson para desenhar a linha exata das ruas no mapa
+const url = https://project-osrm.org{origemSelecionada.lng},${origemSelecionada.lat};${destinoSelecionado.lng},${destinoSelecionado.lat}?overview=full&geometries=geojson;
+try {
+const resposta = await fetch(url);
+const dados = await resposta.json();
+if (dados.code !== "Ok" || !dados.routes || dados.routes.length === 0) {
+alert("Não foi possível traçar uma rota entre esses pontos.");
+return;
+}
+const rota = dados.routes[0];
+const distanciaKm = (rota.distance / 1000).toFixed(1);
+const tempoMin = Math.ceil(rota.duration / 60);
+// Desenha o mapa e a rota na tela
+desenharMapa(origemSelecionada, destinoSelecionado, rota.geometry);
+// Define tarifas conforme o perfil selecionado
+const perfil = document.getElementById("perfilTarifa").value;
+const tarifas = perfil === "capital"
+? { uber: [2.75, 1.60, 0.32, 8.50], n99: [2.50, 1.50, 0.28, 8.00] }
+: { uber: [2.20, 1.35, 0.22, 6.50], n99: [2.00, 1.25, 0.20, 6.00] };
+const horaAtual = new Date().getHours();
+const ehPico = (horaAtual >= 7 && horaAtual <= 9) || (horaAtual >= 17 && horaAtual <= 19);
+const fatorMax = ehPico ? 1.45 : 1.25;
+const calcFaixa = ([base, porKm, porMin, minima]) => {
+const valorMedio = base + (parseFloat(distanciaKm) * porKm) + (tempoMin * porMin);
+const min = Math.max(minima, valorMedio * 0.90).toFixed(2).replace('.', ',');
+const max = (valorMedio * fatorMax).toFixed(2).replace('.', ',');
+return R$ ${min} - R$ ${max};
+};
+document.getElementById("distancia").innerText = distanciaKm.replace('.', ',');
+document.getElementById("tempo").innerText = tempoMin;
+document.getElementById("precoUber").innerText = calcFaixa(tarifas.uber);
+document.getElementById("preco99").innerText = calcFaixa(tarifas.n99);
+const uberUrl = https://uber.com[latitude]=${origemSelecionada.lat}&pickup[longitude]=${origemSelecionada.lng}&pickup[nickname]=${encodeURIComponent(origemSelecionada.nome)}&dropoff[latitude]=${destinoSelecionado.lat}&dropoff[longitude]=${destinoSelecionado.lng}&dropoff[nickname]=${encodeURIComponent(destinoSelecionado.nome)};
+const app99Url = https://99app.com;
+const btnUber = document.getElementById("linkUber");
+btnUber.href = uberUrl;
+btnUber.style.display = "block";
+const btn99 = document.getElementById("link99");
+btn99.href = app99Url;
+btn99.style.display = "block";
+document.getElementById("resultado").style.display = "block";
+} catch (erro) {
+console.error("Erro na requisição:", erro);
+alert("Erro ao conectar com o serviço de rotas. Tente novamente.");
+} finally {
+btnCalc.innerText = "Calcular Trajeto e Preço";
+btnCalc.disabled = false;
+}
+}
