@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estimador de Corridas</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 480px; margin: 30px auto; padding: 15px; background: #f4f4f9; }
+    .card { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .input-group { position: relative; margin-bottom: 15px; }
+    .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    label { font-weight: bold; font-size: 14px; }
+    .btn-gps { background: #e0e7ff; color: #1d4ed8; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; }
+    .btn-gps:hover { background: #c7d2fe; }
+    .btn-gps:disabled { opacity: 0.6; cursor: not-allowed; }
+    input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+    .sugestoes { position: absolute; width: 100%; background: #fff; border: 1px solid #ddd; border-top: none; border-radius: 0 0 6px 6px; max-height: 180px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+    .sugestao-item { padding: 10px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #eee; }
+    .sugestao-item:hover { background: #f0f4ff; }
+    button.btn-calc { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; background: #2563eb; color: white; }
+    button.btn-calc:disabled { background: #93c5fd; cursor: not-allowed; }
+    .btn-uber { background: #000000; color: white; display: none; text-align: center; text-decoration: none; padding: 12px; border-radius: 6px; margin-top: 10px; font-weight: bold; }
+    .btn-99 { background: #ffdd00; color: #000; display: none; text-align: center; text-decoration: none; padding: 12px; border-radius: 6px; margin-top: 10px; font-weight: bold; }
+    .resultado { margin-top: 20px; padding: 15px; background: #eef2ff; border-radius: 6px; display: none; }
+    .aviso { font-size: 12px; color: #555; margin-top: 10px; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Simulador de Trajeto</h2>
+
+  <div class="input-group">
+    <div class="label-row">
+      <label for="inputOrigem">Origem</label>
+      <button type="button" class="btn-gps" id="btnGps" onclick="usarLocalizacaoAtual()">📍 Usar localização atual</button>
+    </div>
+    <input type="text" id="inputOrigem" placeholder="Digite o endereço de partida..." autocomplete="off">
+    <div id="sugestoesOrigem" class="sugestoes"></div>
+  </div>
+
+  <div class="input-group">
+    <div class="label-row">
+      <label for="inputDestino">Destino</label>
+    </div>
+    <input type="text" id="inputDestino" placeholder="Para onde você vai?" autocomplete="off">
+    <div id="sugestoesDestino" class="sugestoes"></div>
+  </div>
+  
+  <button class="btn-calc" id="btnCalc" onclick="calcularRota()">Calcular Estimativa</button>
+
+  <div id="resultado" class="resultado">
+    <p><strong>Distância:</strong> <span id="distancia"></span> km</p>
+    <p><strong>Tempo estimado:</strong> <span id="tempo"></span> min</p>
+    <hr>
+    <p><strong>Estimativa UberX:</strong> <span id="precoUber"></span></p>
+    <p><strong>Estimativa 99Pop:</strong> <span id="preco99"></span></p>
+
+    <a id="linkUber" class="btn-uber" target="_blank" rel="noopener noreferrer">Chamar na Uber</a>
+    <a id="link99" class="btn-99" target="_blank" rel="noopener noreferrer">Abrir app da 99</a>
+    <p class="aviso">*Valores estimados. O preço final pode variar conforme a tarifa dinâmica.</p>
+  </div>
+</div>
+
+<script>
+  let origemSelecionada = null;
+  let destinoSelecionado = null;
+
+  function usarLocalizacaoAtual() {
+    const btnGps = document.getElementById("btnGps");
+    const inputOrigem = document.getElementById("inputOrigem");
+
+    if (!("geolocation" in navigator)) {
+      alert("Seu navegador não suporta geolocalização.");
+      return;
+    }
+
+    btnGps.innerText = "⏳ Buscando GPS...";
+    btnGps.disabled = true;
+
+    navigator.geolocation.getCurrentPosition(
+      async (posicao) => {
+        const lat = posicao.coords.latitude;
+        const lng = posicao.coords.longitude;
+
+        try {
+          const url = `https://openstreetmap.org{lat}&lon=${lng}&accept-language=pt-BR`;
+          const res = await fetch(url);
+          const data = await res.json();
+
+          const endereco = data.address || {};
+          const rua = endereco.road || "Localização Atual";
+          const numero = endereco.house_number ? `, ${endereco.house_number}` : "";
+          const bairro = endereco.suburb || endereco.neighbourhood || "";
+          const cidade = endereco.city || endereco.town || endereco.municipality || "";
+
+          const nomeLegivel = `${rua}${numero}${bairro ? ` - ${bairro}` : ""}${cidade ? `, ${cidade}` : ""}`;
+
+          inputOrigem.value = nomeLegivel;
+          origemSelecionada = { lat: lat, lng: lng, nome: nomeLegivel };
+        } catch (erro) {
+          inputOrigem.value = "Minha localização atual (GPS)";
+          origemSelecionada = { lat: lat, lng: lng, nome: "Minha localização atual" };
+        } finally {
+          btnGps.innerText = "📍 Usar localização atual";
+          btnGps.disabled = false;
+        }
+      },
+      (erro) => {
+        btnGps.innerText = "📍 Usar localização atual";
+        btnGps.disabled = false;
+        alert("Não foi possível acessar sua localização. Verifique se a permissão de GPS está ativada e se o site usa HTTPS.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  function configurarAutocomplete(inputId, listaId, tipo) {
+    const input = document.getElementById(inputId);
+    const lista = document.getElementById(listaId);
+    let timeout = null;
+
+    input.addEventListener("input", () => {
+      // Limpa a coordenada anterior sempre que o usuário alterar o texto manualmente
+      if (tipo === "origem") origemSelecionada = null;
+      if (tipo === "destino") destinoSelecionado = null;
+
+      clearTimeout(timeout);
+      const texto = input.value.trim();
+
+      if (texto.length < 3) {
+        lista.style.display = "none";
+        return;
+      }
+
+      timeout = setTimeout(async () => {
+        try {
+          const url = `https://komoot.io{encodeURIComponent(texto)}&limit=5&bbox=-73.99,-33.75,-34.79,5.27`;
+          const res = await fetch(url);
+          const data = await res.json();
+
+          lista.innerHTML = "";
+          if (!data.features || data.features.length === 0) {
+            lista.style.display = "none";
+            return;
+          }
+
+          data.features.forEach(item => {
+            const props = item.properties;
+            const coords = item.geometry.coordinates; // [longitude, latitude]
+            const partes = [props.name, props.street, props.district, props.city, props.state].filter(Boolean);
+            const nomeFormatado = [...new Set(partes)].join(", ");
+
+            const div = document.createElement("div");
+            div.className = "sugestao-item";
+            div.innerText = nomeFormatado;
+
+            div.onclick = () => {
+              input.value = nomeFormatado;
+              lista.style.display = "none";
+              
+              // Correção aplicada: coords[1] é latitude e coords[0] é longitude
+              const localObj = { lat: coords[1], lng: coords[0], nome: props.name || nomeFormatado };
+              if (tipo === "origem") origemSelecionada = localObj;
+              if (tipo === "destino") destinoSelecionado = localObj;
+            };
+
+            lista.appendChild(div);
+          });
+
+          lista.style.display = "block";
+        } catch (e) {
+          console.error("Erro na busca de endereço:", e);
+        }
+      }, 400);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (e.target !== input) lista.style.display = "none";
+    });
+  }
+
+  configurarAutocomplete("inputOrigem", "sugestoesOrigem", "origem");
+  configurarAutocomplete("inputDestino", "sugestoesDestino", "destino");
+
+  async function calcularRota() {
+    if (!origemSelecionada || !destinoSelecionado) {
+      alert("Por favor, selecione uma Origem (da lista ou via GPS) e um Destino da lista de sugestões.");
+      return;
+    }
+
+    const btnCalc = document.getElementById("btnCalc");
+    btnCalc.innerText = "Calculando...";
+    btnCalc.disabled = true;
+
+    const url = `https://project-osrm.org{origemSelecionada.lng},${origemSelecionada.lat};${destinoSelecionado.lng},${destinoSelecionado.lat}?overview=false`;
+
+    try {
+      const resposta = await fetch(url);
+      const dados = await resposta.json();
+
+      if (dados.code !== "Ok" || !dados.routes || dados.routes.length === 0) {
+        alert("Não foi possível traçar uma rota entre esses pontos.");
+        return;
+      }
+
+      // Correção aplicada: acessando o primeiro item do array de rotas [0]
+      const rota = dados.routes[0];
+      const distanciaKm = (rota.distance / 1000).toFixed(1);
+      const tempoMin = Math.ceil(rota.duration / 60);
+
+      const horaAtual = new Date().getHours();
+      const ehPico = (horaAtual >= 7 && horaAtual <= 9) || (horaAtual >= 17 && horaAtual <= 19);
+      const fatorMax = ehPico ? 1.45 : 1.25;
+
+      const calcFaixa = (base, porKm, porMin) => {
+        const valorMedio = base + (parseFloat(distanciaKm) * porKm) + (tempoMin * porMin);
+        const min = Math.max(7.00, valorMedio * 0.90).toFixed(2).replace('.', ',');
+        const max = (valorMedio * fatorMax).toFixed(2).replace('.', ',');
+        return `R$ ${min} - R$ ${max}`;
+      };
+
+      document.getElementById("distancia").innerText = distanciaKm.replace('.', ',');
+      document.getElementById("tempo").innerText = tempoMin;
+
